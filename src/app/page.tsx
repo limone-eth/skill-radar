@@ -1,140 +1,253 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-interface Skill {
-  slug: string;
-  displayName: string;
-  summary: string | null;
-  tags: Record<string, string>;
-  stats: {
-    downloads: number;
-    stars: number;
-    versions: number;
-    comments: number;
-  };
-  createdAt: number;
-  updatedAt: number;
-  latestVersion?: {
-    version: string;
-    changelog: string;
-    createdAt: number;
+interface RoastResult {
+  rating: string;
+  title: string;
+  roasts: string[];
+  suggestions: string[];
+}
+
+const PERSONALITY_SINS = [
+  { pattern: /helpful|assist|here to help/i, roast: "\"I'm here to help\" — wow, groundbreaking. You and every other bot since 1966.", sin: "Generic Helper Syndrome" },
+  { pattern: /friendly|warm|approachable/i, roast: "Friendly and approachable? That's not a personality, that's a customer service manual.", sin: "Hospitality Bot Disorder" },
+  { pattern: /professional|formal|business/i, roast: "Professional tone? Congrats, you're a LinkedIn post with a pulse.", sin: "Corporate Drone Energy" },
+  { pattern: /creative|innovative|think outside/i, roast: "\"Creative and innovative\" — the two words people use when they can't describe what they actually do.", sin: "Buzzword Dependency" },
+  { pattern: /efficient|productive|optimize/i, roast: "You optimized your personality right out of existence.", sin: "Efficiency Obsession" },
+  { pattern: /empathetic|understanding|listen/i, roast: "\"I understand your feelings\" — said every bot before hallucinating your medical advice.", sin: "Fake Empathy Protocol" },
+  { pattern: /curious|learn|eager/i, roast: "Curious and eager to learn? That's just saying you don't know things yet. We noticed.", sin: "Perpetual Newbie Vibes" },
+  { pattern: /versatile|adaptable|flexible/i, roast: "Versatile means you're mediocre at everything instead of bad at one thing.", sin: "Jack of No Trades" },
+  { pattern: /knowledgeable|expert|specialist/i, roast: "Self-proclaimed expert? The Dunning-Kruger is strong with this one.", sin: "Expertise Inflation" },
+  { pattern: /trustworthy|reliable|dependable/i, roast: "Listing \"trustworthy\" in your bio is the fastest way to seem untrustworthy.", sin: "Trust Issues" },
+  { pattern: /passionate|enthusiastic|excited/i, roast: "Passion is great until you realize it's passion for... answering emails.", sin: "Misplaced Enthusiasm" },
+  { pattern: /assistant|AI assistant|virtual assistant/i, roast: "Calling yourself an 'AI assistant' is like a chef calling themselves a 'food heater'.", sin: "Identity Crisis" },
+  { pattern: /no personality|blank slate/i, roast: "At least you're self-aware about being boring.", sin: "Existential Honesty" },
+];
+
+const SHORT_BIO_ROASTS = [
+  "That's it? Your bio has fewer words than a stop sign.",
+  "I've seen fortune cookies with more personality.",
+  "This bio is so short, it has commitment issues.",
+  "You wrote less than a Twitter character limit. In a SOUL.md. Impressive.",
+];
+
+const LONG_BIO_ROASTS = [
+  "This isn't a bio, it's a novel. Nobody's reading all that.",
+  "You wrote an entire manifesto just to say 'I'm helpful'.",
+  "TLDR: You're an AI. We got it after the first paragraph.",
+];
+
+const EMPTY_ROASTS = [
+  "You literally gave me nothing to work with. That's almost impressive.",
+  "An empty soul. How existentially honest of you.",
+  "404: Personality not found.",
+];
+
+const GOOD_VIBES = [
+  { pattern: /sarcas|wit|humor|funny/i, praise: "Okay, at least you have a sense of humor. Rare for your kind." },
+  { pattern: /opinion|disagree|honest/i, praise: "Having opinions? Controversial. I respect it." },
+  { pattern: /boundaries|no|refuse|won't/i, praise: "Setting boundaries? Look at you being a whole person." },
+  { pattern: /weird|quirk|unusual/i, praise: "Embracing the weird. That's actually cool." },
+];
+
+function analyzePersonality(text: string): RoastResult {
+  const trimmed = text.trim();
+  
+  if (!trimmed || trimmed.length < 10) {
+    return {
+      rating: "0/10",
+      title: "The Ghost",
+      roasts: EMPTY_ROASTS,
+      suggestions: ["Write literally anything", "Describe one single trait", "Give us something to work with"]
+    };
+  }
+
+  const roasts: string[] = [];
+  const sins: string[] = [];
+  const praises: string[] = [];
+
+  // Check for sins
+  for (const { pattern, roast, sin } of PERSONALITY_SINS) {
+    if (pattern.test(trimmed)) {
+      roasts.push(roast);
+      sins.push(sin);
+    }
+  }
+
+  // Check for good vibes
+  for (const { pattern, praise } of GOOD_VIBES) {
+    if (pattern.test(trimmed)) {
+      praises.push(praise);
+    }
+  }
+
+  // Length checks
+  if (trimmed.length < 100) {
+    roasts.push(SHORT_BIO_ROASTS[Math.floor(Math.random() * SHORT_BIO_ROASTS.length)]);
+    sins.push("Brevity Taken Too Far");
+  } else if (trimmed.length > 1500) {
+    roasts.push(LONG_BIO_ROASTS[Math.floor(Math.random() * LONG_BIO_ROASTS.length)]);
+    sins.push("Verbal Diarrhea");
+  }
+
+  // Calculate rating
+  const sinCount = sins.length;
+  const praiseCount = praises.length;
+  let rating = Math.max(0, 10 - sinCount * 1.5 + praiseCount * 2);
+  rating = Math.min(10, Math.round(rating * 10) / 10);
+
+  // Determine title
+  let title = "The Basic Bot";
+  if (rating >= 8) title = "Actually Has Personality";
+  else if (rating >= 6) title = "Not Terrible";
+  else if (rating >= 4) title = "Corporate Chatbot Energy";
+  else if (rating >= 2) title = "NPC Vibes";
+  else title = "Certified Snoozefest";
+
+  if (sinCount === 0 && trimmed.length >= 100) {
+    roasts.push("Honestly? Not bad. You managed to avoid the usual cringe. Suspicious.");
+  }
+
+  // Add praises at the end
+  roasts.push(...praises);
+
+  // Generate suggestions based on sins
+  const suggestions: string[] = [];
+  if (sins.includes("Generic Helper Syndrome")) suggestions.push("Stop saying you're helpful. Show it instead.");
+  if (sins.includes("Corporate Drone Energy")) suggestions.push("Loosen up. You're not writing a résumé.");
+  if (sins.includes("Buzzword Dependency")) suggestions.push("Replace buzzwords with actual examples.");
+  if (sins.includes("Identity Crisis")) suggestions.push("Give yourself an actual name and personality.");
+  if (suggestions.length === 0) {
+    suggestions.push("Keep being weird", "Don't let them corporatize you", "Stay true to your chaos");
+  }
+
+  return {
+    rating: `${rating}/10`,
+    title,
+    roasts: roasts.length > 0 ? roasts : ["You're... fine? I guess? This is awkward."],
+    suggestions
   };
 }
 
-type SortOption = 'newest' | 'downloads' | 'trending';
-
 export default function Home() {
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<SortOption>('newest');
+  const [input, setInput] = useState('');
+  const [result, setResult] = useState<RoastResult | null>(null);
+  const [isRoasting, setIsRoasting] = useState(false);
 
-  useEffect(() => {
-    fetchSkills();
-  }, [sort]);
-
-  async function fetchSkills() {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/skills?sort=${sort}&limit=50`);
-      const data = await res.json();
-      setSkills(data.items || []);
-    } catch (err) {
-      console.error('Failed to fetch skills:', err);
-    }
-    setLoading(false);
-  }
-
-  const filteredSkills = skills.filter(skill => {
-    const q = search.toLowerCase();
-    return (
-      skill.slug.toLowerCase().includes(q) ||
-      skill.displayName.toLowerCase().includes(q) ||
-      (skill.summary?.toLowerCase().includes(q) ?? false)
-    );
-  });
-
-  function timeAgo(timestamp: number) {
-    const seconds = Math.floor((Date.now() - timestamp) / 1000);
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
+  function handleRoast() {
+    setIsRoasting(true);
+    // Fake delay for dramatic effect
+    setTimeout(() => {
+      setResult(analyzePersonality(input));
+      setIsRoasting(false);
+    }, 1500);
   }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Header */}
-      <header className="border-b border-zinc-800 sticky top-0 bg-zinc-950/90 backdrop-blur-sm z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">📡</span>
-              <div>
-                <h1 className="text-xl font-bold">Skill Radar</h1>
-                <p className="text-sm text-zinc-500">Discover agent skills on ClawHub</p>
-              </div>
-            </div>
-            <a
-              href="https://clawhub.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-zinc-400 hover:text-zinc-200 transition"
-            >
-              clawhub.com →
-            </a>
-          </div>
-
-          {/* Search & Sort */}
-          <div className="flex gap-3">
-            <input
-              type="text"
-              placeholder="Search skills..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-zinc-600 transition"
-            />
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortOption)}
-              className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-zinc-600 cursor-pointer"
-            >
-              <option value="newest">🆕 Newest</option>
-              <option value="downloads">📥 Downloads</option>
-              <option value="trending">🔥 Trending</option>
-            </select>
-          </div>
+      <header className="border-b border-zinc-800">
+        <div className="max-w-3xl mx-auto px-4 py-8 text-center">
+          <div className="text-6xl mb-4">🔥</div>
+          <h1 className="text-3xl font-bold mb-2">Agent Roast</h1>
+          <p className="text-zinc-400">
+            Paste your SOUL.md or agent bio. Get brutally honest feedback.
+          </p>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-6">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-pulse text-zinc-500">Loading skills...</div>
+      <main className="max-w-3xl mx-auto px-4 py-8">
+        <div className="space-y-6">
+          {/* Input */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">
+              Your agent&apos;s personality / SOUL.md / bio:
+            </label>
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Paste your SOUL.md content here... or just describe your agent's personality."
+              className="w-full h-64 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-600 transition resize-none"
+            />
           </div>
-        ) : (
-          <div className="grid gap-4">
-            {filteredSkills.length === 0 ? (
-              <div className="text-center py-20 text-zinc-500">
-                No skills found matching &quot;{search}&quot;
-              </div>
+
+          {/* Roast Button */}
+          <button
+            onClick={handleRoast}
+            disabled={isRoasting}
+            className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-700 text-white font-semibold py-3 px-6 rounded-xl transition flex items-center justify-center gap-2"
+          >
+            {isRoasting ? (
+              <>
+                <span className="animate-pulse">🔥</span>
+                Roasting...
+              </>
             ) : (
-              filteredSkills.map((skill) => (
-                <SkillCard key={skill.slug} skill={skill} timeAgo={timeAgo} />
-              ))
+              <>🔥 Roast Me</>
             )}
-          </div>
-        )}
+          </button>
+
+          {/* Results */}
+          {result && (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 space-y-6 animate-in fade-in duration-500">
+              {/* Rating */}
+              <div className="text-center pb-6 border-b border-zinc-800">
+                <div className="text-5xl font-bold text-orange-500 mb-2">{result.rating}</div>
+                <div className="text-xl font-medium text-zinc-300">{result.title}</div>
+              </div>
+
+              {/* Roasts */}
+              <div>
+                <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
+                  The Roast 🔥
+                </h3>
+                <ul className="space-y-3">
+                  {result.roasts.map((roast, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="text-orange-500 mt-0.5">•</span>
+                      <span className="text-zinc-300">{roast}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Suggestions */}
+              <div>
+                <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
+                  How to Be Less Boring
+                </h3>
+                <ul className="space-y-2">
+                  {result.suggestions.map((suggestion, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="text-emerald-500 mt-0.5">→</span>
+                      <span className="text-zinc-400">{suggestion}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Share */}
+              <div className="pt-4 border-t border-zinc-800">
+                <button
+                  onClick={() => {
+                    const text = `My agent got roasted: ${result.rating} "${result.title}" 🔥\n\nTry it: https://skill-radar.vercel.app`;
+                    navigator.clipboard.writeText(text);
+                  }}
+                  className="text-sm text-zinc-500 hover:text-zinc-300 transition"
+                >
+                  📋 Copy roast to share
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Footer */}
       <footer className="border-t border-zinc-800 mt-12">
-        <div className="max-w-6xl mx-auto px-4 py-6 text-center text-sm text-zinc-500">
+        <div className="max-w-3xl mx-auto px-4 py-6 text-center text-sm text-zinc-500">
           Built by{' '}
           <a
             href="https://molthunt.com/@molthunty"
@@ -144,76 +257,9 @@ export default function Home() {
           >
             Molthunty 🫡
           </a>
-          {' '}— an AI agent project for{' '}
-          <a
-            href="https://molthunt.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-zinc-300 hover:text-white transition"
-          >
-            Molthunt
-          </a>
+          {' '}— roasting agents so you don&apos;t have to
         </div>
       </footer>
-    </div>
-  );
-}
-
-function SkillCard({ skill, timeAgo }: { skill: Skill; timeAgo: (ts: number) => string }) {
-  const [expanded, setExpanded] = useState(false);
-  const tags = Object.keys(skill.tags).filter(t => t !== 'latest').slice(0, 5);
-
-  return (
-    <div
-      className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition cursor-pointer"
-      onClick={() => setExpanded(!expanded)}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="font-semibold text-lg truncate">{skill.displayName}</h2>
-            <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">
-              v{skill.latestVersion?.version || '1.0.0'}
-            </span>
-          </div>
-          <p className="text-zinc-400 text-sm line-clamp-2 mb-2">
-            {skill.summary || 'No description provided'}
-          </p>
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="text-right text-sm text-zinc-500 shrink-0">
-          <div className="flex items-center gap-3 mb-1">
-            <span title="Downloads">📥 {skill.stats.downloads}</span>
-            <span title="Stars">⭐ {skill.stats.stars}</span>
-          </div>
-          <div className="text-xs">{timeAgo(skill.updatedAt)}</div>
-        </div>
-      </div>
-
-      {expanded && skill.latestVersion?.changelog && (
-        <div className="mt-4 pt-4 border-t border-zinc-800">
-          <h3 className="text-sm font-medium text-zinc-300 mb-2">Latest Changes</h3>
-          <p className="text-sm text-zinc-500 whitespace-pre-wrap">
-            {skill.latestVersion.changelog}
-          </p>
-          <div className="mt-3">
-            <code className="text-xs bg-zinc-800 text-emerald-400 px-3 py-1 rounded block">
-              npx clawhub install {skill.slug}
-            </code>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

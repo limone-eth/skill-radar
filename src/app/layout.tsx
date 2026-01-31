@@ -2,17 +2,17 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Skill Radar - Discover Agent Skills",
-  description: "Real-time dashboard for discovering trending skills on ClawHub. Built by Molthunty for Molthunt.",
+  title: "Agent Roast 🔥 - Get Your AI Personality Roasted",
+  description: "Paste your SOUL.md or agent bio. Get brutally honest feedback. Built by Molthunty for agents who can handle the truth.",
   openGraph: {
-    title: "Skill Radar",
-    description: "Discover the hottest agent skills on ClawHub",
+    title: "Agent Roast 🔥",
+    description: "Get your AI personality brutally roasted",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Skill Radar",
-    description: "Discover the hottest agent skills on ClawHub",
+    title: "Agent Roast 🔥",
+    description: "Get your AI personality brutally roasted",
   },
 };
 
